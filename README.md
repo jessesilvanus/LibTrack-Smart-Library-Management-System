@@ -1,9 +1,16 @@
 # LibTrack — Smart Library Management System
 
-> **Academic Project:** Visvesvaraya Technological University (VTU) 7th-Semester B.E. (2022 Scheme)  
-> **Course:** Big Data Project Laboratory (Department of Computer Science & Engineering)  
-> **Design Foundation:** UI UX Pro Max (`design-system/libtrack/MASTER.md`)  
-> **Repository Status:** Production Candidate — 120 / 120 Automated Tests Passing (100%)
+[![Live Demo](https://img.shields.io/badge/Live%20Hosted%20Demo-Cloudflare%20Edge-emerald?style=for-the-badge&logo=cloudflare)](https://menus-intervention-different-essays.trycloudflare.com)
+[![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github)](https://github.com/jessesilvanus/LibTrack-Smart-Library-Management-System)
+[![Build Status](https://img.shields.io/badge/Tests-120%2F120%20Passing-success?style=for-the-badge)](https://github.com/jessesilvanus/LibTrack-Smart-Library-Management-System)
+
+> 🌐 **Live Hosted URL:** [https://menus-intervention-different-essays.trycloudflare.com](https://menus-intervention-different-essays.trycloudflare.com)  
+> 🔗 **GitHub Repository:** [https://github.com/jessesilvanus/LibTrack-Smart-Library-Management-System](https://github.com/jessesilvanus/LibTrack-Smart-Library-Management-System)  
+> 📧 **Configured Admin Sender:** `jessetemp923@gmail.com`  
+> 🎓 **Academic Project:** Visvesvaraya Technological University (VTU) 7th-Semester B.E. (2022 Scheme)  
+> 📚 **Course:** Big Data Project Laboratory (Department of Computer Science & Engineering)  
+> 🎨 **Design Foundation:** Obsidian Space — UI UX Pro Max (`design-system/libtrack/MASTER.md`)  
+> ✅ **Verification Status:** 120 / 120 Automated Tests Passing (100%)
 
 ---
 
@@ -206,3 +213,36 @@ Comprehensive academic documentation has been compiled in the `docs/` directory:
 - [`docs/submission/PROJECT_REPORT.md`](docs/submission/PROJECT_REPORT.md) — Formal VTU 7th-Semester Engineering Project Report
 - [`docs/submission/DEMONSTRATION_PLAN.md`](docs/submission/DEMONSTRATION_PLAN.md) — 8–12 Minute Live Evaluation Script
 - [`docs/submission/VIVA_QUESTIONS.md`](docs/submission/VIVA_QUESTIONS.md) — 30+ Comprehensive Viva Voce Questions & Answers
+
+---
+
+## 9. Deployment & Hosting Guide
+
+LibTrack can be accessed publicly via the active live edge tunnel or deployed permanently to cloud platforms:
+
+### A. Live Hosted Edge Previews
+- **Primary Live URL (Zero-Config Global Edge):**  
+  [https://menus-intervention-different-essays.trycloudflare.com](https://menus-intervention-different-essays.trycloudflare.com)  
+  *Powered by Cloudflare Edge — Accessible globally on mobile & desktop without any passwords or VPN.*
+- **Secondary Tunnel:**  
+  [https://warm-turtle-22.loca.lt](https://warm-turtle-22.loca.lt) *(Tunnel Password: `116.73.138.100`)*
+
+### B. Permanent 1-Click Cloud Deployment (Vercel + Render)
+
+#### Frontend (Vercel / Netlify):
+1. Connect your GitHub repository: [`https://github.com/jessesilvanus/LibTrack-Smart-Library-Management-System`](https://github.com/jessesilvanus/LibTrack-Smart-Library-Management-System)
+2. Set **Root Directory** to `client`
+3. Set **Build Command** to `npm run build`
+4. Set **Output Directory** to `dist`
+5. Click **Deploy**
+
+#### Backend (Render / Railway / Fly.io):
+1. Connect the repository and select Web Service
+2. Set **Root Directory** to `server`
+3. Set **Build Command** to `npm install && npm run build`
+4. Set **Start Command** to `npm start` (or `npm run dev:memory` for standalone zero-config evaluation)
+5. Set Environment Variables:
+   - `EMAIL_FROM`: `LibTrack Admin <jessetemp923@gmail.com>`
+   - `ADMIN_EMAIL`: `jessetemp923@gmail.com`
+   - `CLIENT_ORIGIN`: Your deployed Vercel frontend URL
+
