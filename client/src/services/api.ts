@@ -30,13 +30,15 @@ import {
 } from '../types';
 
 const ADMIN_API_KEY = 'libtrack-admin-secret-2024';
+const DEFAULT_PRODUCTION_BACKEND = 'https://libtrack-smart-library-management-system.onrender.com';
 
 /**
  * Dynamically resolves the API Base URL.
  * Priority:
  * 1. User-configured custom backend URL stored in localStorage ('libtrack_backend_url')
  * 2. Vite environment variable: import.meta.env.VITE_API_URL
- * 3. Fallback to '/api' (handled by Vite dev proxy or same-domain deployment)
+ * 3. Localhost development fallback to '/api' (handled by Vite dev proxy)
+ * 4. Permanent production cloud backend: https://libtrack-smart-library-management-system.onrender.com/api
  */
 export function getApiBaseUrl(): string {
   try {
@@ -53,7 +55,13 @@ export function getApiBaseUrl(): string {
     return clean.endsWith('/api') ? clean : `${clean}/api`;
   }
 
-  return '/api';
+  // Local development fallback
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    return '/api';
+  }
+
+  // Permanent production cloud backend
+  return `${DEFAULT_PRODUCTION_BACKEND}/api`;
 }
 
 export function setStoredBackendUrl(url: string): void {

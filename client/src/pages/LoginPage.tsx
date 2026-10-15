@@ -162,18 +162,19 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
           {/* Backend Connection Indicator & Quick Config Trigger */}
           <div className="mb-4">
-            <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-xs text-slate-300 font-mono">
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-xs text-slate-300 font-mono">
               <div className="flex items-center gap-2 overflow-hidden truncate">
-                <Server className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-                <span className="text-slate-400">API:</span>
-                <span className="truncate text-white font-medium">{activeBackendUrl}</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                <span className="text-emerald-300 font-sans font-semibold text-xs">Render Cloud Connected</span>
+                <span className="text-slate-500">•</span>
+                <span className="truncate text-slate-400 text-[11px] font-mono">{activeBackendUrl.replace(/\/api$/, '')}</span>
               </div>
               <button
                 type="button"
                 onClick={() => setShowServerSettings(!showServerSettings)}
-                className="ml-2 px-2 py-0.5 rounded-md bg-white/[0.06] hover:bg-white/[0.12] text-[11px] text-cyan-300 hover:text-cyan-200 transition-colors shrink-0"
+                className="ml-2 px-2 py-0.5 rounded-md bg-white/[0.06] hover:bg-white/[0.12] text-[10px] text-slate-400 hover:text-white transition-colors shrink-0"
               >
-                {showServerSettings ? 'Hide' : 'Configure'}
+                {showServerSettings ? 'Hide' : 'Server Info'}
               </button>
             </div>
 
