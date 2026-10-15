@@ -4,7 +4,7 @@
 [![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github)](https://github.com/jessesilvanus/LibTrack-Smart-Library-Management-System)
 [![Build Status](https://img.shields.io/badge/Tests-120%2F120%20Passing-success?style=for-the-badge)](https://github.com/jessesilvanus/LibTrack-Smart-Library-Management-System)
 
-> 🌐 **Live Hosted URL:** [lib-track-smart-library-management.vercel.app)  
+> 🌐 **Live Hosted URL:** [[lib-track-smart-library-management.vercel.app)  ](https://lib-track-smart-library-management.vercel.app/)
 > 🔗 **GitHub Repository:** [https://github.com/jessesilvanus/LibTrack-Smart-Library-Management-System](https://github.com/jessesilvanus/LibTrack-Smart-Library-Management-System)  
 > 📧 **Configured Admin Sender:** `jessetemp923@gmail.com`  
 > 🎓 **Academic Project:** Visvesvaraya Technological University (VTU) 7th-Semester B.E. (2022 Scheme)  
