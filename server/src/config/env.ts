@@ -4,8 +4,8 @@ import { z } from 'zod';
 dotenv.config();
 
 const envSchema = z.object({
-  PORT: z.string().default('5000').transform((val) => parseInt(val, 10)),
-  MONGODB_URI: z.string().default('mongodb://127.0.0.1:27017/libtrack'),
+  PORT: z.union([z.string(), z.number()]).default('5000').transform((val) => (typeof val === 'number' ? val : parseInt(val, 10))),
+  MONGODB_URI: z.string().default('mongodb://127.0.0.1:27017/libtrack').transform((val) => val.trim()),
   CLIENT_ORIGIN: z.string().default('http://localhost:5173'),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
 

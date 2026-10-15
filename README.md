@@ -227,22 +227,46 @@ LibTrack can be accessed publicly via the active live edge tunnel or deployed pe
 - **Secondary Tunnel:**  
   [https://warm-turtle-22.loca.lt](https://warm-turtle-22.loca.lt) *(Tunnel Password: `116.73.138.100`)*
 
-### B. Permanent 1-Click Cloud Deployment (Vercel + Render)
+### B. Permanent Full-Stack Cloud Deployment (Vercel + Render + MongoDB Atlas)
 
-#### Frontend (Vercel / Netlify):
-1. Connect your GitHub repository: [`https://github.com/jessesilvanus/LibTrack-Smart-Library-Management-System`](https://github.com/jessesilvanus/LibTrack-Smart-Library-Management-System)
-2. Set **Root Directory** to `client`
-3. Set **Build Command** to `npm run build`
-4. Set **Output Directory** to `dist`
-5. Click **Deploy**
+#### 1. Database (MongoDB Atlas Free Tier)
+1. Log in to [MongoDB Atlas](https://www.mongodb.com/cloud/atlas).
+2. Create a free **M0 Shared Cluster**.
+3. Under **Security → Network Access**, click **Add IP Address** and choose **Allow Access From Anywhere (`0.0.0.0/0`)** *(crucial so Render cloud containers can connect)*.
+4. Under **Security → Database Access**, create a database user (e.g., `libtrack_admin`) and password.
+5. In **Clusters → Connect → Drivers**, copy the connection string and add `/libtrack` before the query params:
+   ```env
+   MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/libtrack?retryWrites=true&w=majority
+   ```
 
-#### Backend (Render / Railway / Fly.io):
-1. Connect the repository and select Web Service
-2. Set **Root Directory** to `server`
-3. Set **Build Command** to `npm install && npm run build`
-4. Set **Start Command** to `npm start` (or `npm run dev:memory` for standalone zero-config evaluation)
-5. Set Environment Variables:
-   - `EMAIL_FROM`: `LibTrack Admin <jessetemp923@gmail.com>`
-   - `ADMIN_EMAIL`: `jessetemp923@gmail.com`
-   - `CLIENT_ORIGIN`: Your deployed Vercel frontend URL
+#### 2. Backend (Render Web Service)
+1. Log in to [Render.com](https://render.com) and click **New + → Web Service**.
+2. Connect your GitHub repository: [`https://github.com/jessesilvanus/LibTrack-Smart-Library-Management-System`](https://github.com/jessesilvanus/LibTrack-Smart-Library-Management-System)
+3. Configure the service settings:
+   - **Root Directory:** `server`
+   - **Runtime:** `Node`
+   - **Build Command:** `npm install && npm run build`
+   - **Start Command:** `npm start` *(or `npm run dev:memory` for in-memory DB fallback)*
+   - **Health Check Path:** `/api/health`
+4. Add the following **Environment Variables**:
+   | Variable | Value | Description |
+   |---|---|---|
+   | `MONGODB_URI` | `mongodb+srv://.../libtrack` | Your MongoDB Atlas connection string |
+   | `NODE_ENV` | `production` | Production mode |
+   | `EMAIL_FROM` | `LibTrack Admin <jessetemp923@gmail.com>` | Official library sender email |
+   | `ADMIN_EMAIL` | `jessetemp923@gmail.com` | Primary administrator account |
+   | `ADMIN_API_KEY` | `libtrack-admin-secret-2024` | Security key for protected routes |
+5. Click **Deploy Web Service** and copy your Render URL (e.g., `https://libtrack-backend.onrender.com`).
+
+#### 3. Frontend (Vercel)
+1. Log in to [Vercel](https://vercel.com) and click **Add New... → Project**.
+2. Import repository: `jessesilvanus/LibTrack-Smart-Library-Management-System`.
+3. Set **Root Directory** to `client` (or leave default root, both are supported).
+4. Under **Environment Variables**, add:
+   - `VITE_API_URL`: Your Render backend URL (e.g., `https://libtrack-backend.onrender.com`)
+5. Click **Deploy**.
+
+> 💡 **In-App Dynamic Backend Switcher:**  
+> If you didn't configure `VITE_API_URL` in Vercel, simply click **"Configure"** beside the API endpoint pill on the Login screen, paste your Render URL, and click **"Test & Connect Backend"**! The frontend connects immediately without needing a redeployment.
+
 

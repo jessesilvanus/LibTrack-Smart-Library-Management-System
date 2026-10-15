@@ -14,19 +14,38 @@ import { importsRouter } from './routes/imports.js';
 import { analyticsRouter } from './routes/analytics.js';
 import { authRouter } from './routes/auth.js';
 import { startReminderScheduler } from './scheduler/reminderScheduler.js';
+import { ensureSeedData } from './scripts/autoSeed.js';
 
 const app = express();
 
-// CORS configuration for authorized client origin
+// Permissive CORS configuration supporting Vercel, localhost, Render, and custom domains
 app.use(
   cors({
-    origin: [env.CLIENT_ORIGIN, 'http://localhost:5173', 'http://127.0.0.1:5173'],
+    origin: true,
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-admin-key', 'x-user-role', 'x-admin-email'],
   })
 );
+app.options('*', cors());
 
 app.use(express.json({ limit: '15mb' }));
 app.use(requestLogger);
+
+// Root route for Render and browser health check
+app.get('/', (_req, res) => {
+  res.status(200).json({
+    success: true,
+    service: 'LibTrack Backend API',
+    status: 'ONLINE',
+    version: '1.0.0',
+    endpoints: {
+      health: '/api/health',
+      auth: '/api/auth/me',
+      dashboard: '/api/dashboard/summary',
+    },
+  });
+});
 
 // API Routes
 app.use('/api/health', healthRouter);
@@ -65,9 +84,11 @@ export const server = app.listen(env.PORT, () => {
 
   // Non-blocking connection attempt
   connectDB()
-    .then(() => {
-      // Start automated background scheduler once DB is up
-      startReminderScheduler();
+    .then(async (connected) => {
+      if (connected) {
+        await ensureSeedData();
+        startReminderScheduler();
+      }
     })
     .catch((err) => {
       console.warn(`[Server] Initial DB connection attempt completed with notice:`, err);

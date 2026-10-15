@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   BookOpen,
   Mail,
@@ -10,9 +10,19 @@ import {
   ArrowRight,
   AlertCircle,
   CheckCircle2,
+  Server,
+  Globe,
+  RefreshCw,
+  Check,
 } from 'lucide-react';
 import { AuthUser } from '../types';
-import { loginAdmin } from '../services/api';
+import {
+  loginAdmin,
+  getApiBaseUrl,
+  getStoredBackendUrl,
+  setStoredBackendUrl,
+  testBackendConnection,
+} from '../services/api';
 
 interface LoginPageProps {
   onLoginSuccess: (user: AuthUser) => void;
@@ -25,6 +35,17 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [rememberMe, setRememberMe] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Backend URL configuration & diagnostics
+  const [showServerSettings, setShowServerSettings] = useState<boolean>(false);
+  const [backendUrlInput, setBackendUrlInput] = useState<string>(getStoredBackendUrl());
+  const [activeBackendUrl, setActiveBackendUrl] = useState<string>(getApiBaseUrl());
+  const [isTestingServer, setIsTestingServer] = useState<boolean>(false);
+  const [serverTestResult, setServerTestResult] = useState<{ success: boolean; message: string } | null>(null);
+
+  useEffect(() => {
+    setActiveBackendUrl(getApiBaseUrl());
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,6 +98,35 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     setErrorMessage(null);
   };
 
+  const handleTestAndSaveServer = async () => {
+    setIsTestingServer(true);
+    setServerTestResult(null);
+    try {
+      const trimmed = backendUrlInput.trim();
+      const res = await testBackendConnection(trimmed || undefined);
+      setServerTestResult(res);
+      if (res.success) {
+        setStoredBackendUrl(trimmed);
+        setActiveBackendUrl(getApiBaseUrl());
+        setErrorMessage(null);
+      }
+    } catch (err: any) {
+      setServerTestResult({
+        success: false,
+        message: err?.message || 'Connection test failed. Verify the URL is correct and the server is online.',
+      });
+    } finally {
+      setIsTestingServer(false);
+    }
+  };
+
+  const handleResetServerUrl = () => {
+    setStoredBackendUrl('');
+    setBackendUrlInput('');
+    setActiveBackendUrl(getApiBaseUrl());
+    setServerTestResult(null);
+  };
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-[#080C14] relative overflow-hidden font-sans selection:bg-emerald-500 selection:text-black">
       {/* Dynamic Ambient Space Glows */}
@@ -91,7 +141,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent" />
 
           {/* Brand Header */}
-          <div className="flex flex-col items-center text-center mb-6">
+          <div className="flex flex-col items-center text-center mb-5">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center text-slate-950 font-black shadow-glow-emerald ring-2 ring-emerald-500/30 mb-3.5 transform transition-transform hover:scale-105">
               <BookOpen className="w-7 h-7 stroke-[2.5]" aria-hidden="true" />
             </div>
@@ -110,6 +160,94 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             </p>
           </div>
 
+          {/* Backend Connection Indicator & Quick Config Trigger */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-xs text-slate-300 font-mono">
+              <div className="flex items-center gap-2 overflow-hidden truncate">
+                <Server className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                <span className="text-slate-400">API:</span>
+                <span className="truncate text-white font-medium">{activeBackendUrl}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowServerSettings(!showServerSettings)}
+                className="ml-2 px-2 py-0.5 rounded-md bg-white/[0.06] hover:bg-white/[0.12] text-[11px] text-cyan-300 hover:text-cyan-200 transition-colors shrink-0"
+              >
+                {showServerSettings ? 'Hide' : 'Configure'}
+              </button>
+            </div>
+
+            {/* Expandable Backend Server Settings Box */}
+            {showServerSettings && (
+              <div className="mt-2.5 p-3.5 rounded-xl bg-[#0F172A]/90 border border-cyan-500/30 space-y-3 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between text-xs text-slate-300">
+                  <span className="font-semibold text-white flex items-center gap-1.5">
+                    <Globe className="w-3.5 h-3.5 text-cyan-400" />
+                    Render Backend Server URL
+                  </span>
+                  {backendUrlInput && (
+                    <button
+                      type="button"
+                      onClick={handleResetServerUrl}
+                      className="text-[11px] text-slate-400 hover:text-rose-300 transition-colors"
+                    >
+                      Reset to /api
+                    </button>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <input
+                    type="url"
+                    value={backendUrlInput}
+                    onChange={(e) => setBackendUrlInput(e.target.value)}
+                    placeholder="https://your-service.onrender.com"
+                    className="w-full h-9 px-3 text-xs bg-slate-900 border border-white/15 rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500 font-mono"
+                  />
+                  <p className="text-[11px] text-slate-400 leading-tight">
+                    Paste your Render Web Service URL (e.g. <span className="text-cyan-300 font-mono">https://libtrack-backend.onrender.com</span>)
+                  </p>
+                </div>
+
+                {serverTestResult && (
+                  <div
+                    className={`p-2 rounded-lg text-xs flex items-start gap-2 ${
+                      serverTestResult.success
+                        ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-300'
+                        : 'bg-rose-500/15 border border-rose-500/30 text-rose-300'
+                    }`}
+                  >
+                    {serverTestResult.success ? (
+                      <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertCircle className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
+                    )}
+                    <span className="leading-snug">{serverTestResult.message}</span>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleTestAndSaveServer}
+                  disabled={isTestingServer}
+                  className="w-full h-8 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
+                >
+                  {isTestingServer ? (
+                    <>
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                      <span>Testing Render Connection...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-3 h-3" />
+                      <span>Test & Connect Backend</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Sender Identity Notice Box */}
           <div className="mb-5 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-300 text-xs flex items-start gap-2.5">
             <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
@@ -121,9 +259,21 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
           {/* Error Banner */}
           {errorMessage && (
-            <div className="mb-5 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2 animate-in fade-in">
-              <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-400" />
-              <span>{errorMessage}</span>
+            <div className="mb-5 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs space-y-2 animate-in fade-in">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-400 mt-0.5" />
+                <span>{errorMessage}</span>
+              </div>
+              {!showServerSettings && (
+                <button
+                  type="button"
+                  onClick={() => setShowServerSettings(true)}
+                  className="text-[11px] font-semibold text-cyan-300 hover:text-cyan-200 underline flex items-center gap-1"
+                >
+                  <Server className="w-3 h-3" />
+                  Connect Render Backend Server URL
+                </button>
+              )}
             </div>
           )}
 

@@ -29,8 +29,108 @@ import {
   LoginResponseData,
 } from '../types';
 
-const API_BASE_URL = '/api';
 const ADMIN_API_KEY = 'libtrack-admin-secret-2024';
+
+/**
+ * Dynamically resolves the API Base URL.
+ * Priority:
+ * 1. User-configured custom backend URL stored in localStorage ('libtrack_backend_url')
+ * 2. Vite environment variable: import.meta.env.VITE_API_URL
+ * 3. Fallback to '/api' (handled by Vite dev proxy or same-domain deployment)
+ */
+export function getApiBaseUrl(): string {
+  try {
+    const custom = localStorage.getItem('libtrack_backend_url');
+    if (custom && custom.trim()) {
+      const clean = custom.trim().replace(/\/$/, '');
+      return clean.endsWith('/api') ? clean : `${clean}/api`;
+    }
+  } catch {}
+
+  const envUrl = (import.meta as any).env?.VITE_API_URL;
+  if (envUrl && typeof envUrl === 'string' && envUrl.trim()) {
+    const clean = envUrl.trim().replace(/\/$/, '');
+    return clean.endsWith('/api') ? clean : `${clean}/api`;
+  }
+
+  return '/api';
+}
+
+export function setStoredBackendUrl(url: string): void {
+  try {
+    if (!url || !url.trim()) {
+      localStorage.removeItem('libtrack_backend_url');
+    } else {
+      const clean = url.trim().replace(/\/$/, '');
+      localStorage.setItem('libtrack_backend_url', clean);
+    }
+  } catch {}
+}
+
+export function getStoredBackendUrl(): string {
+  try {
+    return localStorage.getItem('libtrack_backend_url') || '';
+  } catch {}
+  return '';
+}
+
+/**
+ * Quick diagnostic ping to test backend health
+ */
+export async function testBackendConnection(targetUrl?: string): Promise<{ success: boolean; message: string; data?: any }> {
+  try {
+    const base = targetUrl && targetUrl.trim()
+      ? (targetUrl.trim().replace(/\/$/, '').endsWith('/api') ? targetUrl.trim().replace(/\/$/, '') : `${targetUrl.trim().replace(/\/$/, '')}/api`)
+      : getApiBaseUrl();
+
+    const healthEndpoint = `${base}/health`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
+
+    const res = await fetch(healthEndpoint, {
+      signal: controller.signal,
+      headers: {
+        'x-admin-key': ADMIN_API_KEY,
+      },
+    });
+    clearTimeout(timeoutId);
+
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      return {
+        success: false,
+        message: `Connected to server at ${base}, but received non-JSON response (HTTP ${res.status}). Ensure the URL points to the LibTrack Express server.`,
+      };
+    }
+
+    const data = await res.json();
+    if (data.data?.status === 'UP') {
+      const dbStatus = data.data.database?.connected ? 'Database Connected' : 'Database Pending/Connecting';
+      return {
+        success: true,
+        message: `Connected to LibTrack backend! (${dbStatus})`,
+        data: data.data,
+      };
+    }
+
+    return {
+      success: true,
+      message: `Connected to API at ${base} (Status: ${data.data?.status || 'OK'})`,
+      data: data.data,
+    };
+  } catch (err: any) {
+    if (err.name === 'AbortError') {
+      return {
+        success: false,
+        message: 'Connection timed out after 6 seconds. If your backend is on Render free tier, it may take ~30-50 seconds to spin up from sleep.',
+      };
+    }
+    return {
+      success: false,
+      message: err?.message || 'Unable to connect to the backend URL.',
+    };
+  }
+}
 
 export function getStoredAdminEmail(): string {
   try {
@@ -45,6 +145,9 @@ export function getStoredAdminEmail(): string {
 
 // Helper for HTTP requests
 async function request<T>(endpoint: string, options?: RequestInit): Promise<ApiResponse<T>> {
+  const baseUrl = getApiBaseUrl();
+  const targetUrl = `${baseUrl}${endpoint}`;
+
   try {
     const activeEmail = getStoredAdminEmail();
     const defaultHeaders: Record<string, string> = {
@@ -56,13 +159,26 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<ApiR
       defaultHeaders['x-admin-email'] = activeEmail;
     }
 
-    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const res = await fetch(targetUrl, {
       headers: {
         ...defaultHeaders,
         ...(options?.headers || {}),
       },
       ...options,
     });
+
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      const rawText = await res.text();
+      return {
+        success: false,
+        error: {
+          code: 'INVALID_SERVER_RESPONSE',
+          message: `The server returned an invalid response (HTTP ${res.status}). Verify your backend URL (${baseUrl}).`,
+          details: rawText.slice(0, 180),
+        },
+      };
+    }
 
     const data = await res.json();
     return data;
@@ -71,7 +187,7 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<ApiR
       success: false,
       error: {
         code: 'NETWORK_ERROR',
-        message: 'Unable to connect to LibTrack API service. Check that backend server is active.',
+        message: `Unable to connect to LibTrack API service at ${baseUrl}. If using Render free tier, the backend may need 40-50s to wake up from cold sleep.`,
         details: err instanceof Error ? err.message : String(err),
       },
     };
@@ -397,11 +513,11 @@ export async function sendTestEmail(recipientEmail: string): Promise<
 
 // --- BULK CSV IMPORT & BATCH PROCESSING ---
 export function getTemplateDownloadUrl(type: 'books' | 'members'): string {
-  return `${API_BASE_URL}/imports/templates/${type}`;
+  return `${getApiBaseUrl()}/imports/templates/${type}`;
 }
 
 export function getErrorReportDownloadUrl(jobId: string): string {
-  return `${API_BASE_URL}/imports/${jobId}/error-report`;
+  return `${getApiBaseUrl()}/imports/${jobId}/error-report`;
 }
 
 export async function validateCsvImport(payload: {
@@ -416,7 +532,7 @@ export async function validateCsvImport(payload: {
     formData.append('importType', payload.importType);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/imports/validate`, {
+      const res = await fetch(`${getApiBaseUrl()}/imports/validate`, {
         method: 'POST',
         headers: {
           'x-admin-key': ADMIN_API_KEY,
@@ -676,7 +792,8 @@ export async function fetchReportData(
   if (params?.search) query.set('search', params.search);
 
   try {
-    const res = await fetch(`${API_BASE_URL}/analytics/reports/${reportType}?${query.toString()}`, {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}/analytics/reports/${reportType}?${query.toString()}`, {
       headers: {
         'x-admin-key': ADMIN_API_KEY,
       },
@@ -700,7 +817,7 @@ export function getReportExportUrl(
   if (params?.startDate) query.set('startDate', params.startDate);
   if (params?.endDate) query.set('endDate', params.endDate);
   if (params?.search) query.set('search', params.search);
-  return `${API_BASE_URL}/analytics/reports/${reportType}/export?${query.toString()}`;
+  return `${getApiBaseUrl()}/analytics/reports/${reportType}/export?${query.toString()}`;
 }
 
 
